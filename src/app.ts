@@ -2,16 +2,18 @@ import Xlsx from "xlsx";
 import express, { response } from "express";
 import pg from 'pg';
 import bodyParser from 'body-parser';
+import cors from 'cors';
+import { request } from "http";
 
-const connectionString = 'postgres://me:password@localhost:5432/api';
+const connectionString = 'postgres://moin@localhost:8080/api';
 const client = new pg.Client(connectionString);
 
-client.connect((err) =>{
-    if(!err){
-        console.log('Database connection succeeded');
-    }else {
-        console.log('Database connection failed\n'+JSON.stringify(err));
-    }
+client.connect((err) => {
+  if (!err) {
+    console.log('Database connection succeeded');
+  } else {
+    console.log('Database connection failed\n' + JSON.stringify(err));
+  }
 });
 
 
@@ -29,7 +31,7 @@ console.log(data.length);
 console.log(data[0][1]);
 console.log(data[0]['Name']);
 
-
+app.use(cors());
 app.use(bodyParser.json())
 app.use(
   bodyParser.urlencoded({
@@ -38,26 +40,49 @@ app.use(
 )
 
 app.get("/users", (request, response) => {
-  client.query('SELECT * FROM users',(err,rows,fields) =>{
-    if(err){
-        console.log(err);
-    }else{
-        console.log(rows);
+  client.query('SELECT * FROM users', (err, rows, fields) => {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log(rows);
+      response.json(rows);
     }
   });
 });
 
-app.get("/insert", (request, response) => {
-   for(let i=0;i<data.length; i++){
-    client.query('insert into users (name,role) values ($1,$2)',[data[i]['Name'],data[i]['Role']],(err,rows,fields) =>{
-        if(err){
-            console.log(err);
-        }else{
-            console.log(rows);
-        }
-      });
-   }
+app.get("/delete", (request,response) => {
+  client.query('TRUNCATE TABLE users RESTART IDENTITY', (err, rows, fields) => {
+    if(err){
+      console.log(err);
+    }else {
+      console.log('Delete Successful');
+    }
   });
+});
+
+app.post("/deleteSelected", (request,response) => {
+  for(let i = 0; i < request.body.length; i++){
+    client.query('delete from users where id=($1)',[request.body[i]], (err, rows, fields) => {
+      if(err){
+        console.log(err);
+      }else {
+        console.log('Delete Successful');
+      }
+    });
+  }
+});
+
+
+app.post("/insert", (request, response) => {
+  
+    client.query('insert into users (name,email) values ($1,$2)', [request.body.name, request.body.email], (err, rows, fields) => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log(rows);
+      }
+    });
+});
 
 app.listen(port, () => {
   console.log(`App running on port ${port}.`);
