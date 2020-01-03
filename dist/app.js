@@ -43,6 +43,16 @@ app.get("/users", (request, response) => {
         }
     });
 });
+app.post("/update", (request, response) => {
+    client.query('update users  set name=($2), email=($3) where id=($1)', [request.body.id, request.body.name, request.body.email], (err, rows, fields) => {
+        if (err) {
+            console.log(err);
+        }
+        else {
+            console.log('Updated succesfully');
+        }
+    });
+});
 app.get("/delete", (request, response) => {
     client.query('TRUNCATE TABLE users RESTART IDENTITY', (err, rows, fields) => {
         if (err) {
